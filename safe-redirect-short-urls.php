@@ -208,11 +208,12 @@ class TenUp_Safe_Redirect_Short_Urls {
 	 * Intercept the update_post_meta('_redirect_rule_from') call in $safe_redirect_manager->create_redirect()
 	 * Throw out the randomly generated from address, and replace with hashid based on the new post's ID.
 	 * 
-	 * @param [type] $null       null.
-	 * @param [type] $object_id  Post ID
-	 * @param [type] $meta_key   meta_key for post_meta. Method does nothing if not == '_redirect_rule_from'
-	 * @param [type] $meta_value Not used.
-	 * @param [type] $prev_value Not used.
+	 * @param null   $null       null.
+	 * @param int    $object_id  Post ID
+	 * @param string $meta_key   meta_key for post_meta. Method does nothing if not == '_redirect_rule_from'
+	 * @param string $meta_value Not used.
+	 * @param string $prev_value Not used.
+	 * 
 	 * @return  null|bool  null to continue original update. True to cancel original update.
 	 */
 	public function set_redirect_hash( $null, $object_id, $meta_key, $meta_value, $prev_value ) {
