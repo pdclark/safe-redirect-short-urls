@@ -84,6 +84,10 @@ class TenUp_Safe_Redirect_Short_Urls {
 		}
 	}
 
+	/**
+	 * Verify Safe Redirect Manager is installed and active.
+	 * Attempt to activate SRM if it is installed, but not active.
+	 */
 	protected function check_plugin_requirements() {
 		$this->srm_file = trailingslashit( WP_PLUGIN_DIR ) . $this->srm_slug;
 
@@ -109,6 +113,9 @@ class TenUp_Safe_Redirect_Short_Urls {
 
 	}
 
+	/**
+	 * Send notice if $_GET['url'] or $_GET['key'] are not valid.
+	 */
 	public function check_ajax_requirements() {
 		if ( !isset( $_GET['url'] ) ) {
 			exit( 'No URL set' );
@@ -134,6 +141,12 @@ class TenUp_Safe_Redirect_Short_Urls {
 		}
 	}
 
+	/**
+	 * Load API key from constant or filter.
+	 *
+	 * @todo  (maybe) Enable a hashid API key for each administrator and editor.
+	 * @return string API key
+	 */
 	public function get_api_key() {
 		$api_key = false;
 
@@ -144,6 +157,12 @@ class TenUp_Safe_Redirect_Short_Urls {
 		return apply_filters( 'short_url_api_key', $api_key );
 	}
 
+	/**
+	 * Create a redirect for $_GET['url']
+	 * Set the redirect_from path to a short hashid
+	 * 
+	 * @return string (Output to browser) Full short URL. For example, http://10up.com/abc123
+	 */
 	public function wp_ajax_create_short_url() {
 		global $safe_redirect_manager;
 		
@@ -161,6 +180,12 @@ class TenUp_Safe_Redirect_Short_Urls {
 		exit( site_url( $this->redirect_hash ) );
 	}
 
+	/**
+	 * Check if a redirect already exists for $_GET['url']
+	 * If so, set $this->redirect_hash for output to browser.
+	 * 
+	 * @return string|bool Redirect hash or false
+	 */
 	protected function get_existing_redirect_hash() {
 		global $wpdb, $safe_redirect_manager;
 
@@ -179,6 +204,17 @@ class TenUp_Safe_Redirect_Short_Urls {
 		return false;
 	}
 
+	/**
+	 * Intercept the update_post_meta('_redirect_rule_from') call in $safe_redirect_manager->create_redirect()
+	 * Throw out the randomly generated from address, and replace with hashid based on the new post's ID.
+	 * 
+	 * @param [type] $null       null.
+	 * @param [type] $object_id  Post ID
+	 * @param [type] $meta_key   meta_key for post_meta. Method does nothing if not == '_redirect_rule_from'
+	 * @param [type] $meta_value Not used.
+	 * @param [type] $prev_value Not used.
+	 * @return  null|bool  null to continue original update. True to cancel original update.
+	 */
 	public function set_redirect_hash( $null, $object_id, $meta_key, $meta_value, $prev_value ) {
 		global $safe_redirect_manager;
 
@@ -199,14 +235,6 @@ class TenUp_Safe_Redirect_Short_Urls {
 
 		return true;
 
-	}
-
-	public function sanatize_url( $url ) {
-		if ( false === strpos( $url, 'http://') && false === strpos( $url, 'https://' ) ) {
-			return 'http://' . $url;
-		}else {
-			return $url;
-		}
 	}
 
 	/**
