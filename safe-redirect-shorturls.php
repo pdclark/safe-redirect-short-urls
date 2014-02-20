@@ -2,7 +2,7 @@
 /*
 Plugin Name: Safe Redirect Short URLs
 Plugin URI: http://10up.com
-Description: 
+Description: Generate short urls in Safe Redirect Manager by loading <code>/wp-admin/admin-ajax.php?action=create-short-url&key=YOUR_API_KEY&url=http://longurl.com</code>. Set your API key in <code>wp-config.php</code> with <code>define( 'SHORT_URL_API_KEY', 'your-api-key' );</code>
 Version: 1.0
 Author: Paul Clark, 10up
 Author URI: http://10up.com
@@ -35,6 +35,12 @@ class TenUp_Safe_Redirect_Shorturls {
 	protected $srm_path;
 
 	/**
+	 * Hash to pass to SRM as redirect_from
+	 * @var boolean|string
+	 */
+	protected $redirect_hash = false;
+
+	/**
 	 * Don't use this. Use ::get_instance() instead.
 	 */
 	public function __construct() {
@@ -61,9 +67,12 @@ class TenUp_Safe_Redirect_Shorturls {
 	 * Initial setup. Called by get_instance.
 	 */
 	protected function init() {
-		$this->check_requirements();
+		$this->check_plugin_requirements();
 
 		add_action( 'admin_notices', array( $this, 'admin_notices' ) );
+
+		add_action( 'wp_ajax_create-short-url', array( $this, 'wp_ajax_create_short_url' ) );
+		add_action( 'wp_ajax_nopriv_create-short-url', array( $this, 'create_short_url' ) );
 	}
 
 	/**
@@ -75,13 +84,14 @@ class TenUp_Safe_Redirect_Shorturls {
 		}
 	}
 
-	protected function check_requirements() {
+	protected function check_plugin_requirements() {
 		$this->srm_file = trailingslashit( WP_PLUGIN_DIR ) . $this->srm_slug;
 
-		// Deactivate this plugin if SRM is deactivated.
-		add_action( 'update_option_active_plugins', array( $this, 'srm_deactivate' ) );
+		if ( isset( $_GET['plugin'] ) && plugin_basename( __FILE__ ) != $_GET['plugin'] ) {
+			add_action( 'update_option_active_plugins', array( $this, 'srm_deactivate' ) );
+		}
 
-		if ( class_exists( 'SRM_Safe_Redirect_Manager' ) || isset( $_GET['deactivate'] ) ) {
+		if ( class_exists( 'SRM_Safe_Redirect_Manager' ) ) {
 			return;
 		}
 
@@ -97,6 +107,106 @@ class TenUp_Safe_Redirect_Shorturls {
 			$this->notices[] = "<p><strong>Safe Redirect Short URLs</strong> requires <strong>Safe Redirect Manager</strong>. Please <a href='$url'>install it</a>.</p>";
 		}
 
+	}
+
+	public function check_ajax_requirements() {
+		if ( !isset( $_GET['url'] ) ) {
+			exit( 'No URL set' );
+		}
+
+		$_GET['url'] = trim( $_GET['url'] );
+
+		if ( !filter_var( $_GET['url'], FILTER_VALIDATE_URL ) ) {
+			$with_http = 'http://' . $_GET['url'];
+
+			if ( filter_var( $with_http, FILTER_VALIDATE_URL ) ) {
+				$_GET['url'] = $with_http;
+			}else {
+				exit( 'Please provide a valid URL. You sent: ' . $_GET['url'] );
+			}
+			
+		}
+
+		if ( $this->get_api_key() ) {
+			if ( !isset( $_GET['key'] ) || $_GET['key'] != $this->get_api_key() ) {
+				exit( 'Please provide a valid API key.' );
+			}
+		}
+	}
+
+	public function get_api_key() {
+		$api_key = false;
+
+		if ( defined( 'SHORT_URL_API_KEY') ) {
+			$api_key = SHORT_URL_API_KEY;
+		}
+
+		return apply_filters( 'short_url_api_key', $api_key );
+	}
+
+	public function wp_ajax_create_short_url() {
+		global $safe_redirect_manager;
+		
+		$this->check_ajax_requirements();
+
+		$this->get_existing_redirect_hash();
+
+		if ( !$this->redirect_hash ) {
+
+			add_filter( 'update_post_metadata', array( $this, 'set_redirect_hash' ), 10, 5 );
+			$safe_redirect_manager->create_redirect( md5( rand() ), $_GET['url'], 301 );
+		
+		}
+
+		exit( site_url( $this->redirect_hash ) );
+	}
+
+	protected function get_existing_redirect_hash() {
+		global $wpdb, $safe_redirect_manager;
+
+		$sanitized_redirect_to = $safe_redirect_manager->sanitize_redirect_to( $_GET['url'] );
+
+		$sql = "SELECT post_id FROM $wpdb->postmeta WHERE meta_key=%s AND meta_value=%s";
+		$post_id = $wpdb->get_var( $wpdb->prepare( $sql, $safe_redirect_manager->meta_key_redirect_to, $sanitized_redirect_to ) );
+
+		if ( $post_id ) {
+			$sql = "SELECT meta_value FROM $wpdb->postmeta WHERE meta_key=%s AND post_id=%d";
+			$this->redirect_hash = $wpdb->get_var( $wpdb->prepare( $sql, $safe_redirect_manager->meta_key_redirect_from, $post_id ) );
+
+			return $this->redirect_hash;
+		}
+
+		return false;
+	}
+
+	public function set_redirect_hash( $null, $object_id, $meta_key, $meta_value, $prev_value ) {
+		global $safe_redirect_manager;
+
+		if ( $meta_key != $safe_redirect_manager->meta_key_redirect_from ) {
+			return $null;
+		}
+
+		remove_filter( 'update_post_metadata', array( $this, 'set_redirect_hash' ), 10, 5 );
+
+		require_once dirname( __FILE__ ) . '/includes/class-hashids.php';
+
+		$hashids = new Hashids\Hashids( NONCE_SALT );
+		$post_hash = '/' . $hashids->encrypt( $object_id );
+
+		$this->redirect_hash = $safe_redirect_manager->sanitize_redirect_from( $post_hash );
+
+		update_post_meta( $object_id, $safe_redirect_manager->meta_key_redirect_from, $this->redirect_hash );
+
+		return true;
+
+	}
+
+	public function sanatize_url( $url ) {
+		if ( false === strpos( $url, 'http://') && false === strpos( $url, 'https://' ) ) {
+			return 'http://' . $url;
+		}else {
+			return $url;
+		}
 	}
 
 	/**
