@@ -10,10 +10,10 @@ License: GPLv2 or later
 License URI: http://www.gnu.org/licenses/gpl-2.0.html
 */
 
-class TenUp_Safe_Redirect_Shorturls {
+class TenUp_Safe_Redirect_Short_Urls {
 
 	/**
-	 * @var TenUp_Safe_Redirect_Shorturls Instance of this class.
+	 * @var TenUp_Safe_Redirect_Short_Urls Instance of this class.
 	 */
 	private static $instance = false;
 
@@ -52,7 +52,7 @@ class TenUp_Safe_Redirect_Shorturls {
 
 	/**
 	 * Maybe instantiate, then return instance of this class.
-	 * @return TenUp_Safe_Redirect_Shorturls Controller instance.
+	 * @return TenUp_Safe_Redirect_Short_Urls Controller instance.
 	 */
 	public static function get_instance() {
 		if ( !is_a( self::$instance, __CLASS__ ) ) {
@@ -226,4 +226,4 @@ class TenUp_Safe_Redirect_Shorturls {
 
 }
 
-TenUp_Safe_Redirect_Shorturls::get_instance();
+TenUp_Safe_Redirect_Short_Urls::get_instance();
