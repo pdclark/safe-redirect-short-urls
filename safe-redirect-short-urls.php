@@ -239,7 +239,6 @@ class TenUp_Safe_Redirect_Short_Urls {
 
 	/**
 	 * If Safe Redirect Manager is deactivated, deactivate this plugin too.
-	 * @return [type] [description]
 	 */
 	public function srm_deactivate() {
 		if ( !function_exists( 'deactivate_plugins') ) {
