@@ -18,25 +18,24 @@ class TenUp_Safe_Redirect_Short_Urls {
 	private static $instance = false;
 
 	/**
-	 * Admin notices
+	 * @var array  Admin notices
 	 */
 	protected $notices = array();
 
 	/**
-	 * Plugin slug for Safe Redirect Manager.
-	 * @var string
+	 * @var string  Plugin slug for Safe Redirect Manager.
 	 */
-	protected $srm_slug = 'safe-redirect-manager/safe-redirect-manager.php';
+	protected $safe_redirect_slug = 'safe-redirect-manager/safe-redirect-manager.php';
 
 	/**
-	 * Plugin path for Safe Redirect Manager
-	 * @var string
+	 * @var string  Absolute path to Safe Redirect Manager.
 	 */
-	protected $srm_path;
+	protected $safe_redirect_file;
 
 	/**
-	 * Hash to pass to SRM as redirect_from
-	 * @var boolean|string
+	 * 
+	 * 
+	 * @var boolean|string  False or hash to pass as redirect_from for Safe Redirect Manager.
 	 */
 	protected $redirect_hash = false;
 
@@ -52,6 +51,7 @@ class TenUp_Safe_Redirect_Short_Urls {
 
 	/**
 	 * Maybe instantiate, then return instance of this class.
+	 * 
 	 * @return TenUp_Safe_Redirect_Short_Urls Controller instance.
 	 */
 	public static function get_instance() {
@@ -76,7 +76,7 @@ class TenUp_Safe_Redirect_Short_Urls {
 	}
 
 	/**
-	 * Output all notices that have been added to the $this->notices array
+	 * Output all notices that have been added to the $this->notices array.
 	 */
 	public function admin_notices() {
 		foreach( $this->notices as $key => $message ) {
@@ -89,7 +89,7 @@ class TenUp_Safe_Redirect_Short_Urls {
 	 * Attempt to activate SRM if it is installed, but not active.
 	 */
 	protected function check_plugin_requirements() {
-		$this->srm_file = trailingslashit( WP_PLUGIN_DIR ) . $this->srm_slug;
+		$this->safe_redirect_file = trailingslashit( WP_PLUGIN_DIR ) . $this->safe_redirect_slug;
 
 		if ( isset( $_GET['plugin'] ) && plugin_basename( __FILE__ ) != $_GET['plugin'] ) {
 			add_action( 'update_option_active_plugins', array( $this, 'srm_deactivate' ) );
@@ -103,9 +103,9 @@ class TenUp_Safe_Redirect_Short_Urls {
 			require_once ABSPATH . 'wp-admin/includes/plugin.php';
 		}
 
-		if ( is_plugin_inactive( $this->srm_slug ) && file_exists( $this->srm_file ) ) {
+		if ( is_plugin_inactive( $this->safe_redirect_slug ) && file_exists( $this->safe_redirect_file ) ) {
 			// SRM is installed, but not active. Activate it.
-			activate_plugin( $this->srm_file );
+			activate_plugin( $this->safe_redirect_file );
 		}else {
 			$url = wp_nonce_url( self_admin_url( 'update.php?action=install-plugin&plugin=safe-redirect-manager' ), 'install-plugin_safe-redirect-manager' );
 			$this->notices[] = "<p><strong>Safe Redirect Short URLs</strong> requires <strong>Safe Redirect Manager</strong>. Please <a href='$url'>install it</a>.</p>";
@@ -114,7 +114,7 @@ class TenUp_Safe_Redirect_Short_Urls {
 	}
 
 	/**
-	 * Send notice if $_GET['url'] or $_GET['key'] are not valid.
+	 * Exit with notice if $_GET['url'] or $_GET['key'] are not valid.
 	 */
 	public function check_ajax_requirements() {
 		if ( !isset( $_GET['url'] ) ) {
@@ -144,7 +144,7 @@ class TenUp_Safe_Redirect_Short_Urls {
 	/**
 	 * Load API key from constant or filter.
 	 *
-	 * @todo  (maybe) Enable a hashid API key for each administrator and editor.
+	 * @todo  (maybe) Create a hashid API key for each administrator and editor.
 	 * @return string API key
 	 */
 	public function get_api_key() {
@@ -182,7 +182,7 @@ class TenUp_Safe_Redirect_Short_Urls {
 
 	/**
 	 * Check if a redirect already exists for $_GET['url']
-	 * If so, set $this->redirect_hash for output to browser.
+	 * If so, set $this->redirect_hash to existing redirect_from hash.
 	 * 
 	 * @return string|bool Redirect hash or false
 	 */
@@ -206,7 +206,7 @@ class TenUp_Safe_Redirect_Short_Urls {
 
 	/**
 	 * Intercept the update_post_meta('_redirect_rule_from') call in $safe_redirect_manager->create_redirect()
-	 * Throw out the randomly generated from address, and replace with hashid based on the new post's ID.
+	 * Throw out the randomly generated redirect_from, then replace with hashid based on the new post's ID.
 	 * 
 	 * @param null   $null       null.
 	 * @param int    $object_id  Post ID
@@ -246,7 +246,7 @@ class TenUp_Safe_Redirect_Short_Urls {
 			require_once ABSPATH . 'wp-admin/includes/plugin.php';
 		}
 
-		if ( is_plugin_inactive( $this->srm_slug ) ) {
+		if ( is_plugin_inactive( $this->safe_redirect_slug ) ) {
 			deactivate_plugins( __FILE__ );
 		}
 
