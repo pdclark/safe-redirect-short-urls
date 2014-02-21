@@ -2,15 +2,18 @@ Turns Safe Redirect Manager into a Short URL service.
 
 ## Setup
 
-Add to `wp-config.php`:
+1. Activate the plugin. It will auto-activate Safe Redirect Manager or request it be installed if it doesn't exist.
+1. Add `define( 'SHORT_URL_API_KEY', 'YOUR-API-KEY' );` to `wp-config.php`.
 
-```
-define( 'SHORT_URL_API_KEY', 'YOUR-API-KEY' );
-```
+## Generate a short URL:
 
-Generate a short URL:
+Example request:
 
-Send a request to <code>/wp-admin/admin-ajax.php?action=create-short-url&key=YOUR-API-KEY&url=http://longurl.com/example</code>.
+<code>http://site.com/wp-admin/admin-ajax.php?action=create-short-url&key=YOUR-API-KEY&url=http://longurl.com/example</code>
+
+Example return:
+
+http://site.com/Qr3
 
 ## Details
 
