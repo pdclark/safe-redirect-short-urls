@@ -9,7 +9,7 @@ Turns Safe Redirect Manager into a Short URL service.
 
 Example request:
 
-<code>http://site.com/wp-admin/admin-ajax.php?action=create-short-url&key=YOUR-API-KEY&url=http://longurl.com/example</code>
+<code>http://site.com/wp-admin/admin-ajax.php?action=srm-short-url&key=YOUR-API-KEY&url=http://longurl.com/example</code>
 
 Example return:
 

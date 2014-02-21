@@ -71,8 +71,8 @@ class TenUp_Safe_Redirect_Short_Urls {
 
 		add_action( 'admin_notices', array( $this, 'admin_notices' ) );
 
-		add_action( 'wp_ajax_create-short-url', array( $this, 'wp_ajax_create_short_url' ) );
-		add_action( 'wp_ajax_nopriv_create-short-url', array( $this, 'create_short_url' ) );
+		add_action( 'wp_ajax_srm-short-url', array( $this, 'wp_ajax_srm_short_url' ) );
+		add_action( 'wp_ajax_nopriv_srm-short-url', array( $this, 'srm_short_url' ) );
 	}
 
 	/**
@@ -163,7 +163,7 @@ class TenUp_Safe_Redirect_Short_Urls {
 	 * 
 	 * @return string (Output to browser) Full short URL. For example, http://10up.com/abc123
 	 */
-	public function wp_ajax_create_short_url() {
+	public function wp_ajax_srm_short_url() {
 		global $safe_redirect_manager;
 		
 		$this->check_ajax_requirements();
