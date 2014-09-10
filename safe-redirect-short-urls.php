@@ -2,7 +2,7 @@
 /*
 Plugin Name: Safe Redirect Short URLs
 Plugin URI: https://github.com/pdclark/safe-redirect-short-urls
-Description: Generate short urls in Safe Redirect Manager by loading <code>/wp-admin/admin-ajax.php?action=create-short-url&key=YOUR_API_KEY&url=http://longurl.com</code>. Set your API key in <code>wp-config.php</code> with <code>define( 'SHORT_URL_API_KEY', 'your-api-key' );</code>
+Description: Generate short urls in Safe Redirect Manager by loading <code>/wp-admin/admin-ajax.php?action=srm-short-url&key=YOUR_API_KEY&url=http://longurl.com</code>. Set your API key in <code>wp-config.php</code> with <code>define( 'SHORT_URL_API_KEY', 'your-api-key' );</code>
 Version: 1.0
 Author: Paul Clark, 10up
 Author URI: http://pdclark.com
@@ -72,7 +72,7 @@ class TenUp_Safe_Redirect_Short_Urls {
 		add_action( 'admin_notices', array( $this, 'admin_notices' ) );
 
 		add_action( 'wp_ajax_srm-short-url', array( $this, 'wp_ajax_srm_short_url' ) );
-		add_action( 'wp_ajax_nopriv_srm-short-url', array( $this, 'srm_short_url' ) );
+		add_action( 'wp_ajax_nopriv_srm-short-url', array( $this, 'wp_ajax_srm_short_url' ) );
 
 		// Remove redirect limitation
 		add_filter( 'srm_max_redirects', array( $this, 'max_redirects' ) );
@@ -83,7 +83,7 @@ class TenUp_Safe_Redirect_Short_Urls {
 	 */
 	public function admin_notices() {
 		foreach( $this->notices as $key => $message ) {
-			echo "<div class='updated fade' id='styles-$key'>$message</div>";
+			echo '<div class="updated fade" id="srsu-' . esc_attr( $key ) . '">' . wp_kses_post( $message ) . '</div>';
 		}
 	}
 
@@ -102,7 +102,7 @@ class TenUp_Safe_Redirect_Short_Urls {
 			return;
 		}
 
-		if ( !function_exists( 'is_plugin_inactive') ) {
+		if ( ! function_exists( 'is_plugin_inactive') ) {
 			require_once ABSPATH . 'wp-admin/includes/plugin.php';
 		}
 
@@ -129,13 +129,13 @@ class TenUp_Safe_Redirect_Short_Urls {
 	 * Exit with notice if $_GET['url'] or $_GET['key'] are not valid.
 	 */
 	public function check_ajax_requirements() {
-		if ( !isset( $_GET['url'] ) ) {
+		if ( ! isset( $_GET['url'] ) ) {
 			exit( 'No URL set' );
 		}
 
 		$_GET['url'] = trim( $_GET['url'] );
 
-		if ( !filter_var( $_GET['url'], FILTER_VALIDATE_URL ) ) {
+		if ( ! filter_var( $_GET['url'], FILTER_VALIDATE_URL ) ) {
 			$with_http = 'http://' . $_GET['url'];
 
 			if ( filter_var( $with_http, FILTER_VALIDATE_URL ) ) {
@@ -143,11 +143,10 @@ class TenUp_Safe_Redirect_Short_Urls {
 			}else {
 				exit( 'Please provide a valid URL. You sent: ' . $_GET['url'] );
 			}
-			
 		}
 
 		if ( $this->get_api_key() ) {
-			if ( !isset( $_GET['key'] ) || $_GET['key'] != $this->get_api_key() ) {
+			if ( ! isset( $_GET['key'] ) || $_GET['key'] != $this->get_api_key() ) {
 				exit( 'Please provide a valid API key.' );
 			}
 		}
@@ -162,11 +161,11 @@ class TenUp_Safe_Redirect_Short_Urls {
 	public function get_api_key() {
 		$api_key = false;
 
-		if ( defined( 'SHORT_URL_API_KEY') ) {
+		if ( defined( 'SHORT_URL_API_KEY' ) ) {
 			$api_key = SHORT_URL_API_KEY;
 		}
 
-		return apply_filters( 'short_url_api_key', $api_key );
+		return apply_filters( 'srsu_api_key', $api_key );
 	}
 
 	/**
@@ -177,19 +176,35 @@ class TenUp_Safe_Redirect_Short_Urls {
 	 */
 	public function wp_ajax_srm_short_url() {
 		global $safe_redirect_manager;
-		
+
 		$this->check_ajax_requirements();
 
 		$this->get_existing_redirect_hash();
 
-		if ( !$this->redirect_hash ) {
+		if ( ! $this->redirect_hash ) {
 
 			add_filter( 'update_post_metadata', array( $this, 'set_redirect_hash' ), 10, 5 );
 			$safe_redirect_manager->create_redirect( md5( rand() ), $_GET['url'], 301 );
 		
 		}
 
-		exit( site_url( $this->redirect_hash ) );
+		exit( $this->get_site_url( $this->redirect_hash ) );
+	}
+
+	/**
+	 * Allow override of default domain with filter.
+	 * @param  string $hash
+	 * @return string       Full URL
+	 */
+	protected function get_site_url( $hash ) {
+
+		$site_url = apply_filters( 'srsu_site_url', false );
+
+		if ( ! empty( $site_url ) ) {
+			return rtrim( apply_filters( 'srsu_site_url', false ), '/' ) . '/' . ltrim( $hash, '/' );
+		}
+
+		return site_url( $hash );
 	}
 
 	/**
@@ -254,7 +269,7 @@ class TenUp_Safe_Redirect_Short_Urls {
 	 * If Safe Redirect Manager is deactivated, deactivate this plugin too.
 	 */
 	public function srm_deactivate() {
-		if ( !function_exists( 'deactivate_plugins') ) {
+		if ( ! function_exists( 'deactivate_plugins' ) ) {
 			require_once ABSPATH . 'wp-admin/includes/plugin.php';
 		}
 

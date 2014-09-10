@@ -15,6 +15,20 @@ Example return:
 
 http://site.com/Qr3
 
+## Options
+
+Override the default domain name. For example, if you have a short domain that also points to your site.
+
+```php
+add_filter( 'srsu_site_url', function(){ return 'http://pd.cm'; } );
+```
+
+Set the API key using a filter. Useful for setting config in an `mu-plugin` instead of `wp-config.php`
+
+```php
+add_filter( 'srsu_api_key',  function(){ return 'kckRse'; } );
+```
+
 ## Details
 
 * URL keys are [Hash IDs](http://www.hashids.org/) based on the ID used for the redirect custom post type. 
