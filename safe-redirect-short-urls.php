@@ -1,11 +1,11 @@
 <?php
 /*
 Plugin Name: Safe Redirect Short URLs
-Plugin URI: http://10up.com
+Plugin URI: https://github.com/pdclark/safe-redirect-short-urls
 Description: Generate short urls in Safe Redirect Manager by loading <code>/wp-admin/admin-ajax.php?action=create-short-url&key=YOUR_API_KEY&url=http://longurl.com</code>. Set your API key in <code>wp-config.php</code> with <code>define( 'SHORT_URL_API_KEY', 'your-api-key' );</code>
 Version: 1.0
 Author: Paul Clark, 10up
-Author URI: http://10up.com
+Author URI: http://pdclark.com
 License: GPLv2 or later
 License URI: http://www.gnu.org/licenses/gpl-2.0.html
 */
@@ -73,6 +73,9 @@ class TenUp_Safe_Redirect_Short_Urls {
 
 		add_action( 'wp_ajax_srm-short-url', array( $this, 'wp_ajax_srm_short_url' ) );
 		add_action( 'wp_ajax_nopriv_srm-short-url', array( $this, 'srm_short_url' ) );
+
+		// Remove redirect limitation
+		add_filter( 'srm_max_redirects', array( $this, 'max_redirects' ) );
 	}
 
 	/**
@@ -111,6 +114,15 @@ class TenUp_Safe_Redirect_Short_Urls {
 			$this->notices[] = "<p><strong>Safe Redirect Short URLs</strong> requires <strong>Safe Redirect Manager</strong>. Please <a href='$url'>install it</a>.</p>";
 		}
 
+	}
+
+	/**
+	 * Remove redirect count limitation.
+	 * @param  int $max
+	 * @return int
+	 */
+	public function max_redirects( $max ) {
+		return PHP_INT_MAX;
 	}
 
 	/**
@@ -186,7 +198,7 @@ class TenUp_Safe_Redirect_Short_Urls {
 	 * 
 	 * @return string|bool Redirect hash or false
 	 */
-	protected function get_existing_redirect_hash() {
+	public function get_existing_redirect_hash() {
 		global $wpdb, $safe_redirect_manager;
 
 		$sanitized_redirect_to = $safe_redirect_manager->sanitize_redirect_to( $_GET['url'] );
